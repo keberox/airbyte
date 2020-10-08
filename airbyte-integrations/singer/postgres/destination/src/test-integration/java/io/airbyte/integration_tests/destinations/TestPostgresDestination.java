@@ -97,13 +97,13 @@ class TestPostgresDestination {
   public void runTest() throws IOException, InterruptedException, SQLException, WorkerException {
     writeConfigFileToJobRoot(Jsons.serialize(getDbConfig()));
     process = startTarget();
-
     List<String> expectedList =
         Arrays.asList(
-            "('1598659200', '2.12999999999999989', '0.119999999999999996', null)",
-            "('1598745600', '7.15000000000000036', '1.1399999999999999', null)",
-            "('1598832000', '7.15000000000000036', '1.1399999999999999', '10.1600000000000001')",
-            "('1598918400', '7.15000000000000036', '1.1399999999999999', '10.1600000000000001')");
+            "('1598659200', '2.13', '0.12', null)",
+            "('1598745600', '7.15', '1.14', null)",
+            "('1598832000', '7.15', '1.14', '10.16')",
+            "('1598918400', '7.15', '1.14', '10.16')"
+        );
 
     writeResourceToStdIn("singer-tap-output.txt", process);
     process.getOutputStream().close();
