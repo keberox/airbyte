@@ -85,7 +85,7 @@ public class SingerPostgresSourceTest {
 
   @BeforeEach
   public void init() throws IOException {
-    psqlDb = new PostgreSQLContainer();
+    psqlDb = new PostgreSQLContainer("postgres:13-alpine");
     psqlDb.start();
 
     PostgreSQLContainerHelper.runSqlScript(MountableFile.forClasspathResource("init_ascii.sql"), psqlDb);
@@ -148,7 +148,8 @@ public class SingerPostgresSourceTest {
     // force the db server to start with sql_ascii encoding to verify the tap can read UTF8 even when
     // default settings
     // are in another encoding
-    PostgreSQLContainer db = (PostgreSQLContainer) new PostgreSQLContainer().withCommand("postgres -c client_encoding=sql_ascii");
+    PostgreSQLContainer db = (PostgreSQLContainer) new PostgreSQLContainer("postgres:13-alpine")
+        .withCommand("postgres -c client_encoding=sql_ascii");
     db.start();
     PostgreSQLContainerHelper.runSqlScript(MountableFile.forClasspathResource("init_utf8.sql"), db);
 

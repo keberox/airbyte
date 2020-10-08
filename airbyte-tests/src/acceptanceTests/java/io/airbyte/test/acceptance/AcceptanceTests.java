@@ -78,6 +78,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SuppressWarnings("rawtypes")
@@ -105,8 +106,8 @@ public class AcceptanceTests {
     connectionIds = Lists.newArrayList();
     destinationImplIds = Lists.newArrayList();
 
-    sourcePsql = new PostgreSQLContainer();
-    targetPsql = new PostgreSQLContainer();
+    sourcePsql = new PostgreSQLContainer("postgres:13-alpine");
+    targetPsql = new PostgreSQLContainer("postgres:13-alpine");
     sourcePsql.start();
     targetPsql.start();
 

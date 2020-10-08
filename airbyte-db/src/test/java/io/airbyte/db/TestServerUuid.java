@@ -38,16 +38,14 @@ import org.testcontainers.utility.MountableFile;
 
 public class TestServerUuid {
 
-  private static PostgreSQLContainer container;
   private static BasicDataSource connectionPool;
 
   @BeforeAll
   public static void dbSetup() throws IOException, InterruptedException {
-    container =
-        new PostgreSQLContainer("postgres:13-alpine")
-            .withDatabaseName("airbyte")
-            .withUsername("docker")
-            .withPassword("docker");
+    PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:13-alpine")
+        .withDatabaseName("airbyte")
+        .withUsername("docker")
+        .withPassword("docker");
     container.start();
 
     container.copyFileToContainer(MountableFile.forClasspathResource("schema.sql"), "/etc/init.sql");

@@ -76,7 +76,7 @@ class TestPostgresDestination {
 
   @BeforeEach
   public void setUp() throws IOException {
-    PSQL = new PostgreSQLContainer<>();
+    PSQL = new PostgreSQLContainer<>("postgres:13-alpine");
     PSQL.start();
 
     Files.createDirectories(TESTS_PATH);
