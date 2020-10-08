@@ -78,7 +78,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 @SuppressWarnings("rawtypes")
