@@ -34,6 +34,7 @@ import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.commons.csv.CSVFormat;
@@ -60,7 +61,7 @@ public class CsvDestinationIntegrationTest extends TestDestination {
   }
 
   @Override
-  protected List<JsonNode> recordRetriever(TestDestinationEnv testEnv) throws Exception {
+  protected Set<JsonNode> recordRetriever(TestDestinationEnv testEnv, String streamName) throws Exception {
     final List<Path> list = Files.list(testEnv.getLocalRoot().resolve(RELATIVE_PATH)).collect(Collectors.toList());
     assertEquals(1, list.size());
 
@@ -72,7 +73,7 @@ public class CsvDestinationIntegrationTest extends TestDestination {
 
     return StreamSupport.stream(records.spliterator(), false)
         .map(record -> Jsons.deserialize(record.toMap().get(COLUMN_NAME)))
-        .collect(Collectors.toList());
+        .collect(Collectors.toSet());
   }
 
   @Override

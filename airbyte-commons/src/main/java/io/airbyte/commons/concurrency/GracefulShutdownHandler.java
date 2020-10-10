@@ -22,19 +22,26 @@
  * SOFTWARE.
  */
 
-package io.airbyte.scheduler;
+package io.airbyte.commons.concurrency;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SchedulerShutdownHandler extends Thread {
+public class GracefulShutdownHandler extends Thread {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SchedulerShutdownHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GracefulShutdownHandler.class);
+  private final long terminationWaitTime;
+  private final TimeUnit terminateWaitTimeUnits;
   private final ExecutorService[] threadPools;
 
-  public SchedulerShutdownHandler(final ExecutorService... threadPools) {
+  public GracefulShutdownHandler(
+                                 long terminationWaitTime,
+                                 TimeUnit terminateWaitTimeUnits,
+                                 final ExecutorService... threadPools) {
+    this.terminationWaitTime = terminationWaitTime;
+    this.terminateWaitTimeUnits = terminateWaitTimeUnits;
     this.threadPools = threadPools;
   }
 
@@ -44,11 +51,11 @@ public class SchedulerShutdownHandler extends Thread {
       threadPool.shutdown();
 
       try {
-        if (!threadPool.awaitTermination(30, TimeUnit.SECONDS)) {
-          LOGGER.error("Unable to kill worker threads by shutdown timeout.");
+        if (!threadPool.awaitTermination(terminationWaitTime, terminateWaitTimeUnits)) {
+          LOGGER.error("Unable to kill threads by shutdown timeout.");
         }
       } catch (InterruptedException e) {
-        LOGGER.error("Wait for graceful worker thread shutdown interrupted.", e);
+        LOGGER.error("Wait for graceful thread shutdown interrupted.", e);
       }
     }
   }

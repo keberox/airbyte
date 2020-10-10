@@ -22,23 +22,23 @@
  * SOFTWARE.
  */
 
-package io.airbyte.scheduler;
+package io.airbyte.commons.concurrency;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
-class SchedulerShutdownHandlerTest {
+class GracefulShutdownHandlerTest {
 
   @Test
   public void testRun() throws InterruptedException {
     final ExecutorService executorService = mock(ExecutorService.class);
-    final SchedulerShutdownHandler schedulerShutdownHandler = new SchedulerShutdownHandler(executorService);
-    schedulerShutdownHandler.start();
-    schedulerShutdownHandler.join();
+    final GracefulShutdownHandler gracefulShutdownHandler = new GracefulShutdownHandler(30, TimeUnit.SECONDS, executorService);
+    gracefulShutdownHandler.start();
+    gracefulShutdownHandler.join();
 
     verify(executorService).shutdown();
   }
