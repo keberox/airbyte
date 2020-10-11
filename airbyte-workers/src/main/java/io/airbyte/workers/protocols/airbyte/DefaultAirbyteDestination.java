@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
@@ -31,11 +31,13 @@ import io.airbyte.commons.io.IOs;
 import io.airbyte.commons.io.LineGobbler;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.config.StandardTargetConfig;
+import io.airbyte.protocol.models.AirbyteMessage;
 import io.airbyte.singer.SingerMessage;
 import io.airbyte.workers.WorkerConstants;
 import io.airbyte.workers.WorkerException;
 import io.airbyte.workers.WorkerUtils;
 import io.airbyte.workers.process.IntegrationLauncher;
+import io.airbyte.workers.protocols.Destination;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -44,9 +46,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultSingerTarget implements SingerTarget {
+public class DefaultAirbyteDestination implements AirbyteDestination {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingerTarget.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAirbyteDestination.class);
 
   private final IntegrationLauncher integrationLauncher;
 
@@ -54,7 +56,7 @@ public class DefaultSingerTarget implements SingerTarget {
   private BufferedWriter writer = null;
   private boolean endOfStream = false;
 
-  public DefaultSingerTarget(final IntegrationLauncher integrationLauncher) {
+  public DefaultAirbyteDestination(final IntegrationLauncher integrationLauncher) {
     this.integrationLauncher = integrationLauncher;
   }
 
@@ -75,7 +77,7 @@ public class DefaultSingerTarget implements SingerTarget {
   }
 
   @Override
-  public void accept(SingerMessage message) throws IOException {
+  public void accept(AirbyteMessage message) throws IOException {
     Preconditions.checkState(targetProcess != null && !endOfStream);
 
     writer.write(Jsons.serialize(message));

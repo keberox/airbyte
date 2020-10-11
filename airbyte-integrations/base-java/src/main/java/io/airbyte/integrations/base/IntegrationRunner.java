@@ -28,8 +28,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
 import io.airbyte.commons.io.IOs;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.config.Schema;
-import io.airbyte.singer.SingerMessage;
+import io.airbyte.protocol.models.AirbyteCatalog;
+import io.airbyte.protocol.models.AirbyteMessage;
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Scanner;
@@ -81,8 +81,8 @@ public class IntegrationRunner {
         throw new RuntimeException("Not implemented");
       case WRITE -> {
         final JsonNode config = parseConfig(parsed.getConfigPath());
-        final Schema schema = parseConfig(parsed.getCatalogPath(), Schema.class);
-        final DestinationConsumer<SingerMessage> consumer = destination.write(config, schema);
+        final AirbyteCatalog schema = parseConfig(parsed.getCatalogPath(), AirbyteCatalog.class);
+        final DestinationConsumer<AirbyteMessage> consumer = destination.write(config, schema);
         consumeWriteStream(consumer);
       }
       default -> throw new IllegalStateException("Unexpected value: " + parsed.getCommand());
@@ -91,14 +91,14 @@ public class IntegrationRunner {
     LOGGER.info("Completed integration: {}", destination.getClass().getName());
   }
 
-  void consumeWriteStream(DestinationConsumer<SingerMessage> consumer) throws Exception {
+  void consumeWriteStream(DestinationConsumer<AirbyteMessage> consumer) throws Exception {
     final Scanner input = new Scanner(System.in);
     try (consumer) {
       while (input.hasNextLine()) {
         final String inputString = input.nextLine();
-        final Optional<SingerMessage> singerMessageOptional = Jsons.tryDeserialize(inputString, SingerMessage.class);
-        if (singerMessageOptional.isPresent()) {
-          consumer.accept(singerMessageOptional.get());
+        final Optional<AirbyteMessage> messageOptional = Jsons.tryDeserialize(inputString, AirbyteMessage.class);
+        if (messageOptional.isPresent()) {
+          consumer.accept(messageOptional.get());
         } else {
           // todo (cgardens) - decide if we want to throw here instead.
           LOGGER.error(inputString);

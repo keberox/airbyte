@@ -26,29 +26,29 @@ package io.airbyte.workers;
 
 import io.airbyte.config.StandardCheckConnectionInput;
 import io.airbyte.config.StandardCheckConnectionOutput;
-import io.airbyte.config.StandardDiscoverSchemaInput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogInput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
 import java.nio.file.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SingerCheckConnectionWorker implements CheckConnectionWorker {
+public class DefaultCheckConnectionWorker implements CheckConnectionWorker {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(SingerCheckConnectionWorker.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultCheckConnectionWorker.class);
 
   private final DiscoverSchemaWorker discoverSchemaWorker;
 
-  public SingerCheckConnectionWorker(DiscoverSchemaWorker discoverSchemaWorker) {
+  public DefaultCheckConnectionWorker(DiscoverSchemaWorker discoverSchemaWorker) {
     this.discoverSchemaWorker = discoverSchemaWorker;
   }
 
   @Override
   public OutputAndStatus<StandardCheckConnectionOutput> run(StandardCheckConnectionInput input, Path jobRoot) {
 
-    final StandardDiscoverSchemaInput discoverSchemaInput = new StandardDiscoverSchemaInput()
+    final StandardDiscoverCatalogInput discoverSchemaInput = new StandardDiscoverCatalogInput()
         .withConnectionConfiguration(input.getConnectionConfiguration());
 
-    final OutputAndStatus<StandardDiscoverSchemaOutput> outputAndStatus = discoverSchemaWorker.run(discoverSchemaInput, jobRoot);
+    final OutputAndStatus<StandardDiscoverCatalogOutput> outputAndStatus = discoverSchemaWorker.run(discoverSchemaInput, jobRoot);
 
     final JobStatus jobStatus;
     final StandardCheckConnectionOutput output = new StandardCheckConnectionOutput();

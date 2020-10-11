@@ -26,9 +26,10 @@ package io.airbyte.integrations.base;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.airbyte.config.ConnectorSpecification;
-import io.airbyte.config.Schema;
 import io.airbyte.config.StandardCheckConnectionOutput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
+import io.airbyte.protocol.models.AirbyteCatalog;
+import io.airbyte.protocol.models.AirbyteMessage;
 import io.airbyte.singer.SingerMessage;
 
 // todo (cgardens) - share common parts of this interface with source.
@@ -60,14 +61,14 @@ public interface Destination {
    * @return Description of the schema.
    * @throws Exception - any exception.
    */
-  StandardDiscoverSchemaOutput discover(JsonNode config) throws Exception;
+  StandardDiscoverCatalogOutput discover(JsonNode config) throws Exception;
 
   /**
    * Return a consumer that writes messages to the destination.
    *
    * @param config - integration-specific configuration object as json. e.g. { "username": "airbyte",
    *        "password": "super secure" }
-   * @param schema - schema of the incoming messages.
+   * @param catalog - schemas of the incoming messages.
    * @return Consumer that accepts message. The {@link DestinationConsumer#accept(Object)} will be
    *         called n times where n is the number of messages. {@link DestinationConsumer#complete()}
    *         will be called once if all messages were accepted successfully.
@@ -75,6 +76,6 @@ public interface Destination {
    *         failure.
    * @throws Exception - any exception.
    */
-  DestinationConsumer<SingerMessage> write(JsonNode config, Schema schema) throws Exception;
+  DestinationConsumer<AirbyteMessage> write(JsonNode config, AirbyteCatalog catalog) throws Exception;
 
 }

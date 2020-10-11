@@ -25,11 +25,11 @@
 package io.airbyte.workers.wrappers;
 
 import io.airbyte.config.JobOutput;
-import io.airbyte.config.StandardDiscoverSchemaInput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogInput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
 import io.airbyte.workers.DiscoverSchemaWorker;
 
-public class JobOutputDiscoverSchemaWorker extends OutputConvertingWorker<StandardDiscoverSchemaInput, StandardDiscoverSchemaOutput, JobOutput> {
+public class JobOutputDiscoverSchemaWorker extends OutputConvertingWorker<StandardDiscoverCatalogInput, StandardDiscoverCatalogOutput, JobOutput> {
 
   public JobOutputDiscoverSchemaWorker(DiscoverSchemaWorker innerWorker) {
     super(

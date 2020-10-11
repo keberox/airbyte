@@ -8,6 +8,7 @@ plugins {
 dependencies {
     implementation project(':airbyte-config:models')
     implementation project(':airbyte-config:persistence')
+    implementation project(':airbyte-protocol:models')
     implementation project(':airbyte-db')
     implementation project(':airbyte-workers')
 

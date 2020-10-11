@@ -22,22 +22,14 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
-import io.airbyte.config.StandardTapConfig;
-import io.airbyte.singer.SingerMessage;
-import java.nio.file.Path;
-import java.util.Optional;
+import io.airbyte.protocol.models.AirbyteMessage;
+import java.io.BufferedReader;
+import java.util.stream.Stream;
 
-public interface SingerTap extends AutoCloseable {
+public interface AirbyteStreamFactory {
 
-  void start(StandardTapConfig input, Path jobRoot) throws Exception;
-
-  boolean isFinished();
-
-  Optional<SingerMessage> attemptRead();
-
-  @Override
-  void close() throws Exception;
+  Stream<AirbyteMessage> create(BufferedReader bufferedReader);
 
 }

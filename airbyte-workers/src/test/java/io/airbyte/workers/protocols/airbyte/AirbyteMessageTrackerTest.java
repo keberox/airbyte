@@ -22,56 +22,57 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+package io.airbyte.workers.protocols.airbyte;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.singer.SingerMessage;
+import io.airbyte.protocol.models.AirbyteMessage;
+import io.airbyte.protocol.models.AirbyteStateMessage;
 import org.junit.jupiter.api.Test;
 
-class SingerMessageTrackerTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class AirbyteMessageTrackerTest {
 
   @Test
   public void testIncrementsWhenRecord() {
-    final SingerMessage singerMessage = new SingerMessage();
-    singerMessage.withType(SingerMessage.Type.RECORD);
+    final AirbyteMessage airbyteMessage = new AirbyteMessage();
+    airbyteMessage.withType(AirbyteMessage.Type.RECORD);
 
-    final SingerMessageTracker singerMessageTracker = new SingerMessageTracker();
-    singerMessageTracker.accept(singerMessage);
-    singerMessageTracker.accept(singerMessage);
-    singerMessageTracker.accept(singerMessage);
-    assertEquals(3, singerMessageTracker.getRecordCount());
+    final AirbyteMessageTracker airbyteMessageTracker = new AirbyteMessageTracker();
+    airbyteMessageTracker.accept(airbyteMessage);
+    airbyteMessageTracker.accept(airbyteMessage);
+    airbyteMessageTracker.accept(airbyteMessage);
+    assertEquals(3, airbyteMessageTracker.getRecordCount());
   }
 
   @Test
   public void testRetainsLatestState() {
     final JsonNode oldStateValue = Jsons.jsonNode(ImmutableMap.builder().put("lastSync", "1598900000").build());
-    final SingerMessage oldSingerMessage = new SingerMessage()
-        .withType(SingerMessage.Type.STATE)
-        .withValue(oldStateValue);
+    final AirbyteMessage oldAirbyteMessage = new AirbyteMessage()
+        .withType(AirbyteMessage.Type.STATE)
+        .withState(new AirbyteStateMessage().withData(oldStateValue));
 
     final JsonNode newStateValue = Jsons.jsonNode(ImmutableMap.builder().put("lastSync", "1598993526").build());
-    final SingerMessage newStateMessage = new SingerMessage()
-        .withType(SingerMessage.Type.STATE)
-        .withValue(newStateValue);
+    final AirbyteMessage newStateMessage = new AirbyteMessage()
+        .withType(AirbyteMessage.Type.STATE)
+        .withState(new AirbyteStateMessage().withData(newStateValue));
 
-    final SingerMessageTracker singerMessageTracker = new SingerMessageTracker();
-    singerMessageTracker.accept(oldSingerMessage);
-    singerMessageTracker.accept(oldSingerMessage);
-    singerMessageTracker.accept(newStateMessage);
+    final AirbyteMessageTracker messageTracker = new AirbyteMessageTracker();
+    messageTracker.accept(oldAirbyteMessage);
+    messageTracker.accept(oldAirbyteMessage);
+    messageTracker.accept(newStateMessage);
 
-    assertTrue(singerMessageTracker.getOutputState().isPresent());
-    assertEquals(newStateValue, singerMessageTracker.getOutputState().get());
+    assertTrue(messageTracker.getOutputState().isPresent());
+    assertEquals(newStateValue, messageTracker.getOutputState().get());
   }
 
   @Test
   public void testReturnEmptyStateIfNoneEverAccepted() {
-    final SingerMessageTracker singerMessageTracker = new SingerMessageTracker();
-    assertTrue(singerMessageTracker.getOutputState().isEmpty());
+    final AirbyteMessageTracker messageTracker = new AirbyteMessageTracker();
+    assertTrue(messageTracker.getOutputState().isEmpty());
   }
 
 }

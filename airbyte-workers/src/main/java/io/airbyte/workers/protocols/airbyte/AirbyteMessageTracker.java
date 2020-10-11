@@ -22,26 +22,41 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.airbyte.commons.json.JsonSchemaValidator;
-import io.airbyte.singer.SingerConfigSchema;
-import java.util.function.Predicate;
+import io.airbyte.protocol.models.AirbyteMessage;
+import io.airbyte.workers.protocols.MessageTracker;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class SingerProtocolPredicate implements Predicate<JsonNode> {
+public class AirbyteMessageTracker implements MessageTracker<AirbyteMessage> {
 
-  private final JsonSchemaValidator jsonSchemaValidator;
-  private final JsonNode schema;
+  private final AtomicLong recordCount;
+  private final AtomicReference<JsonNode> outputState;
 
-  public SingerProtocolPredicate() {
-    jsonSchemaValidator = new JsonSchemaValidator();
-    schema = JsonSchemaValidator.getSchema(SingerConfigSchema.SINGER_MESSAGE.getFile());
+  public AirbyteMessageTracker() {
+    this.recordCount = new AtomicLong();
+    this.outputState = new AtomicReference<>();
   }
 
   @Override
-  public boolean test(JsonNode s) {
-    return jsonSchemaValidator.test(schema, s);
+  public void accept(AirbyteMessage message) {
+    if (message.getType() == AirbyteMessage.Type.RECORD) {
+      recordCount.incrementAndGet();
+    }
+    if (message.getType() == AirbyteMessage.Type.STATE) {
+      outputState.set(message.getState().getData());
+    }
+  }
+
+  public long getRecordCount() {
+    return recordCount.get();
+  }
+
+  public Optional<JsonNode> getOutputState() {
+    return Optional.ofNullable(outputState.get());
   }
 
 }

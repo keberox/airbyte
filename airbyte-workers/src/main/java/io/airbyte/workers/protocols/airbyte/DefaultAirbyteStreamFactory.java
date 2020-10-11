@@ -22,11 +22,11 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.singer.SingerMessage;
+import io.airbyte.protocol.models.AirbyteMessage;
 import java.io.BufferedReader;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -43,23 +43,23 @@ import org.slf4j.LoggerFactory;
  * will still be parsed. If there are multiple SingerMessage records on the same line, only the
  * first will be parsed.
  */
-public class DefaultSingerStreamFactory implements SingerStreamFactory {
+public class DefaultAirbyteStreamFactory implements AirbyteStreamFactory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingerStreamFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAirbyteStreamFactory.class);
 
-  private final SingerProtocolPredicate singerProtocolValidator;
+  private final AirbyteProtocolPredicate airbyteProtocolPredicate;
   private final Logger logger;
 
-  public DefaultSingerStreamFactory() {
-    this(new SingerProtocolPredicate(), LOGGER);
+  public DefaultAirbyteStreamFactory() {
+    this(new AirbyteProtocolPredicate(), LOGGER);
   }
 
-  DefaultSingerStreamFactory(final SingerProtocolPredicate singerProtocolPredicate, final Logger logger) {
-    singerProtocolValidator = singerProtocolPredicate;
+  DefaultAirbyteStreamFactory(final AirbyteProtocolPredicate airbyteProtocolPredicate, final Logger logger) {
+    this.airbyteProtocolPredicate = airbyteProtocolPredicate;
     this.logger = logger;
   }
 
-  public Stream<SingerMessage> create(BufferedReader bufferedReader) {
+  public Stream<AirbyteMessage> create(BufferedReader bufferedReader) {
     return bufferedReader
         .lines()
         .map(s -> {
@@ -75,14 +75,14 @@ public class DefaultSingerStreamFactory implements SingerStreamFactory {
         .filter(Optional::isPresent)
         .map(Optional::get)
         .filter(j -> {
-          boolean res = singerProtocolValidator.test(j);
+          boolean res = airbyteProtocolPredicate.test(j);
           if (!res) {
             logger.error("Validation failed: {}", Jsons.serialize(j));
           }
           return res;
         })
         .map(j -> {
-          Optional<SingerMessage> m = Jsons.tryObject(j, SingerMessage.class);
+          Optional<AirbyteMessage> m = Jsons.tryObject(j, AirbyteMessage.class);
           if (m.isEmpty()) {
             logger.error("Deserialization failed: {}", Jsons.serialize(j));
           }

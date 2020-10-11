@@ -24,26 +24,25 @@
 
 package io.airbyte.workers;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import io.airbyte.config.StandardSync;
 import io.airbyte.config.StandardSyncInput;
 import io.airbyte.config.StandardTapConfig;
 import io.airbyte.config.StandardTargetConfig;
-import io.airbyte.singer.SingerMessage;
-import io.airbyte.workers.protocols.singer.DefaultSingerTap;
-import io.airbyte.workers.protocols.singer.DefaultSingerTarget;
-import io.airbyte.workers.protocols.singer.SingerMessageUtils;
-import io.airbyte.workers.protocols.singer.SingerTap;
-import io.airbyte.workers.protocols.singer.SingerTarget;
+import io.airbyte.protocol.models.AirbyteMessage;
+import io.airbyte.workers.protocols.airbyte.AirbyteDestination;
+import io.airbyte.workers.protocols.airbyte.AirbyteMessageTracker;
+import io.airbyte.workers.protocols.airbyte.AirbyteMessageUtils;
+import io.airbyte.workers.protocols.airbyte.AirbyteSource;
 import java.nio.file.Path;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.junit.jupiter.api.Test;
 
-class SingerSyncWorkerTest {
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class DefaultSyncWorkerTest {
 
   private static final Path WORKSPACE_ROOT = Path.of("/workspaces/10");
   private static final String STREAM_NAME = "user_preferences";
@@ -65,18 +64,18 @@ class SingerSyncWorkerTest {
         .withStandardSync(standardSync)
         .withDestinationConnectionImplementation(syncInput.getDestinationConnectionImplementation());
 
-    final SingerTap tap = mock(DefaultSingerTap.class);
-    final SingerTarget target = mock(DefaultSingerTarget.class);
+    final AirbyteSource tap = mock(AirbyteSource.class);
+    final AirbyteDestination target = mock(AirbyteDestination.class);
 
-    SingerMessage recordMessage1 = SingerMessageUtils.createRecordMessage(STREAM_NAME, FIELD_NAME, "blue");
-    SingerMessage recordMessage2 = SingerMessageUtils.createRecordMessage(STREAM_NAME, FIELD_NAME, "yellow");
+    AirbyteMessage recordMessage1 = AirbyteMessageUtils.createRecordMessage(STREAM_NAME, FIELD_NAME, "blue");
+    AirbyteMessage recordMessage2 = AirbyteMessageUtils.createRecordMessage(STREAM_NAME, FIELD_NAME, "yellow");
 
     when(tap.isFinished()).thenReturn(false, false, false, true);
     when(tap.attemptRead()).thenReturn(Optional.of(recordMessage1), Optional.empty(), Optional.of(recordMessage2));
 
-    final SingerSyncWorker singerSyncWorker = new SingerSyncWorker(tap, target);
+    final DefaultSyncWorker<AirbyteMessage> defaultSyncWorker = new DefaultSyncWorker<>(tap, target, new AirbyteMessageTracker());
 
-    singerSyncWorker.run(syncInput, WORKSPACE_ROOT);
+    defaultSyncWorker.run(syncInput, WORKSPACE_ROOT);
 
     verify(tap).start(tapConfig, WORKSPACE_ROOT);
     verify(target).start(targetConfig, WORKSPACE_ROOT);

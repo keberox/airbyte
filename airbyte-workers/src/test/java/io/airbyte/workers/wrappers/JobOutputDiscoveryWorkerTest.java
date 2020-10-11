@@ -32,8 +32,8 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Lists;
 import io.airbyte.config.JobOutput;
 import io.airbyte.config.Schema;
-import io.airbyte.config.StandardDiscoverSchemaInput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogInput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
 import io.airbyte.config.Stream;
 import io.airbyte.workers.DiscoverSchemaWorker;
 import io.airbyte.workers.JobStatus;
@@ -45,11 +45,11 @@ public class JobOutputDiscoveryWorkerTest {
 
   @Test
   public void test() {
-    StandardDiscoverSchemaInput input = mock(StandardDiscoverSchemaInput.class);
+    StandardDiscoverCatalogInput input = mock(StandardDiscoverCatalogInput.class);
     Path jobRoot = Path.of("fakeroot");
     DiscoverSchemaWorker discoverWorker = mock(DiscoverSchemaWorker.class);
 
-    StandardDiscoverSchemaOutput output = new StandardDiscoverSchemaOutput().withSchema(
+    StandardDiscoverCatalogOutput output = new StandardDiscoverCatalogOutput().withDeprecatedSchema(
         new Schema().withStreams(Lists.newArrayList(new Stream().withName("table"))));
 
     when(discoverWorker.run(input, jobRoot)).thenReturn(new OutputAndStatus<>(JobStatus.SUCCESSFUL, output));

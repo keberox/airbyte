@@ -35,14 +35,13 @@ import io.airbyte.config.StandardCheckConnectionInput;
 import io.airbyte.config.StandardCheckConnectionOutput;
 import io.airbyte.workers.JobStatus;
 import io.airbyte.workers.OutputAndStatus;
-import io.airbyte.workers.SingerCheckConnectionWorker;
-import io.airbyte.workers.SingerDiscoverSchemaWorker;
+import io.airbyte.workers.DefaultCheckConnectionWorker;
+import io.airbyte.workers.DefaultDiscoverCatalogWorker;
 import io.airbyte.workers.WorkerConstants;
 import io.airbyte.workers.WorkerException;
 import io.airbyte.workers.WorkerUtils;
 import io.airbyte.workers.process.DockerProcessBuilderFactory;
 import io.airbyte.workers.process.IntegrationLauncher;
-import io.airbyte.workers.process.SingerIntegrationLauncher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -155,7 +154,7 @@ class TestLocalCsvDestination {
     javaDestinationPath.toFile().mkdirs();
 
     final Map<String, Object> config = createConfigWithDestinationPath(destinationPath);
-    SingerCheckConnectionWorker checkConnectionWorker = new SingerCheckConnectionWorker(new SingerDiscoverSchemaWorker(integrationLauncher));
+    DefaultCheckConnectionWorker checkConnectionWorker = new DefaultCheckConnectionWorker(new DefaultDiscoverCatalogWorker(integrationLauncher));
     StandardCheckConnectionInput inputConfig = new StandardCheckConnectionInput().withConnectionConfiguration(Jsons.jsonNode(config));
     OutputAndStatus<StandardCheckConnectionOutput> run = checkConnectionWorker.run(inputConfig, jobRoot);
     assertEquals(JobStatus.SUCCESSFUL, run.getStatus());

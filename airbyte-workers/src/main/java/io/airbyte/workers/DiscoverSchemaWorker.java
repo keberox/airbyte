@@ -24,7 +24,7 @@
 
 package io.airbyte.workers;
 
-import io.airbyte.config.StandardDiscoverSchemaInput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogInput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
 
-public interface DiscoverSchemaWorker extends Worker<StandardDiscoverSchemaInput, StandardDiscoverSchemaOutput> {}
+public interface DiscoverSchemaWorker extends Worker<StandardDiscoverCatalogInput, StandardDiscoverCatalogOutput> {}

@@ -37,14 +37,13 @@ import io.airbyte.config.StandardCheckConnectionInput;
 import io.airbyte.config.StandardCheckConnectionOutput;
 import io.airbyte.db.DatabaseHelper;
 import io.airbyte.workers.OutputAndStatus;
-import io.airbyte.workers.SingerCheckConnectionWorker;
-import io.airbyte.workers.SingerDiscoverSchemaWorker;
+import io.airbyte.workers.DefaultCheckConnectionWorker;
+import io.airbyte.workers.DefaultDiscoverCatalogWorker;
 import io.airbyte.workers.WorkerConstants;
 import io.airbyte.workers.WorkerException;
 import io.airbyte.workers.WorkerUtils;
 import io.airbyte.workers.process.DockerProcessBuilderFactory;
 import io.airbyte.workers.process.IntegrationLauncher;
-import io.airbyte.workers.process.SingerIntegrationLauncher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -129,7 +128,7 @@ class TestPostgresDestination {
 
   @Test
   public void testConnectionSuccessful() {
-    SingerCheckConnectionWorker checkConnectionWorker = new SingerCheckConnectionWorker(new SingerDiscoverSchemaWorker(integrationLauncher));
+    DefaultCheckConnectionWorker checkConnectionWorker = new DefaultCheckConnectionWorker(new DefaultDiscoverCatalogWorker(integrationLauncher));
     StandardCheckConnectionInput inputConfig = new StandardCheckConnectionInput().withConnectionConfiguration(Jsons.jsonNode(getDbConfig()));
     OutputAndStatus<StandardCheckConnectionOutput> run = checkConnectionWorker.run(inputConfig, jobRoot);
     assertEquals(SUCCESSFUL, run.getStatus());
@@ -139,7 +138,7 @@ class TestPostgresDestination {
 
   @Test
   public void testConnectionUnsuccessfulInvalidCreds() {
-    SingerCheckConnectionWorker checkConnectionWorker = new SingerCheckConnectionWorker(new SingerDiscoverSchemaWorker(integrationLauncher));
+    DefaultCheckConnectionWorker checkConnectionWorker = new DefaultCheckConnectionWorker(new DefaultDiscoverCatalogWorker(integrationLauncher));
     Map<String, Object> dbConfig = getDbConfig();
     dbConfig.put("postgres_password", "superfakepassword_nowaythisworks");
     StandardCheckConnectionInput inputConfig = new StandardCheckConnectionInput().withConnectionConfiguration(Jsons.jsonNode(dbConfig));

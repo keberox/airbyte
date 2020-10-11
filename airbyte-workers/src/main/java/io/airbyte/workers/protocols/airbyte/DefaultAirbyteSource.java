@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
@@ -30,14 +30,14 @@ import com.google.common.base.Preconditions;
 import io.airbyte.commons.io.IOs;
 import io.airbyte.commons.io.LineGobbler;
 import io.airbyte.commons.json.Jsons;
-import io.airbyte.config.StandardDiscoverSchemaInput;
-import io.airbyte.config.StandardDiscoverSchemaOutput;
+import io.airbyte.config.StandardDiscoverCatalogInput;
+import io.airbyte.config.StandardDiscoverCatalogOutput;
 import io.airbyte.config.StandardTapConfig;
-import io.airbyte.singer.SingerCatalog;
-import io.airbyte.singer.SingerMessage;
+import io.airbyte.protocol.models.AirbyteCatalog;
+import io.airbyte.protocol.models.AirbyteMessage;
+import io.airbyte.workers.DefaultDiscoverCatalogWorker;
 import io.airbyte.workers.JobStatus;
 import io.airbyte.workers.OutputAndStatus;
-import io.airbyte.workers.SingerDiscoverSchemaWorker;
 import io.airbyte.workers.WorkerConstants;
 import io.airbyte.workers.WorkerException;
 import io.airbyte.workers.WorkerUtils;
@@ -51,29 +51,28 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DefaultSingerTap implements SingerTap {
+public class DefaultAirbyteSource implements AirbyteSource {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultSingerTap.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultAirbyteSource.class);
 
   @VisibleForTesting
   static final String DISCOVERY_DIR = "discover";
 
   private final IntegrationLauncher integrationLauncher;
-  private final SingerStreamFactory streamFactory;
-  private final SingerDiscoverSchemaWorker discoverSchemaWorker;
+  private final AirbyteStreamFactory streamFactory;
+  private final DefaultDiscoverCatalogWorker discoverSchemaWorker;
 
   private Process tapProcess = null;
-  private Iterator<SingerMessage> messageIterator = null;
+  private Iterator<AirbyteMessage> messageIterator = null;
 
-  public DefaultSingerTap(final IntegrationLauncher integrationLauncher,
-                          final SingerDiscoverSchemaWorker discoverSchemaWorker) {
-    this(integrationLauncher, new DefaultSingerStreamFactory(), discoverSchemaWorker);
+  public DefaultAirbyteSource(final IntegrationLauncher integrationLauncher,
+                              final DefaultDiscoverCatalogWorker discoverSchemaWorker) {
+    this(integrationLauncher, new DefaultAirbyteStreamFactory(), discoverSchemaWorker);
   }
 
-  @VisibleForTesting
-  DefaultSingerTap(final IntegrationLauncher integrationLauncher,
-                   final SingerStreamFactory streamFactory,
-                   final SingerDiscoverSchemaWorker discoverSchemaWorker) {
+  @VisibleForTesting DefaultAirbyteSource(final IntegrationLauncher integrationLauncher,
+                                          final AirbyteStreamFactory streamFactory,
+                                          final DefaultDiscoverCatalogWorker discoverSchemaWorker) {
     this.integrationLauncher = integrationLauncher;
     this.streamFactory = streamFactory;
     this.discoverSchemaWorker = discoverSchemaWorker;
@@ -83,15 +82,12 @@ public class DefaultSingerTap implements SingerTap {
   public void start(StandardTapConfig input, Path jobRoot) throws Exception {
     Preconditions.checkState(tapProcess == null);
 
-    SingerCatalog singerCatalog = runDiscovery(input, jobRoot);
+    AirbyteCatalog catalog = runDiscovery(input, jobRoot);
 
     final JsonNode configDotJson = input.getSourceConnectionImplementation().getConfiguration();
 
-    final SingerCatalog selectedCatalog = SingerCatalogConverters
-        .applySchemaToDiscoveredCatalog(singerCatalog, input.getStandardSync().getSchema());
-
     IOs.writeFile(jobRoot, WorkerConstants.TAP_CONFIG_JSON_FILENAME, Jsons.serialize(configDotJson));
-    IOs.writeFile(jobRoot, WorkerConstants.CATALOG_JSON_FILENAME, Jsons.serialize(selectedCatalog));
+    IOs.writeFile(jobRoot, WorkerConstants.CATALOG_JSON_FILENAME, Jsons.serialize(catalog));
     IOs.writeFile(jobRoot, WorkerConstants.INPUT_STATE_JSON_FILENAME, Jsons.serialize(input.getState()));
 
     tapProcess = integrationLauncher.read(jobRoot,
@@ -112,7 +108,7 @@ public class DefaultSingerTap implements SingerTap {
   }
 
   @Override
-  public Optional<SingerMessage> attemptRead() {
+  public Optional<AirbyteMessage> attemptRead() {
     Preconditions.checkState(tapProcess != null);
 
     return Optional.ofNullable(messageIterator.hasNext() ? messageIterator.next() : null);
@@ -131,20 +127,19 @@ public class DefaultSingerTap implements SingerTap {
     }
   }
 
-  private SingerCatalog runDiscovery(StandardTapConfig input, Path jobRoot) throws IOException, WorkerException {
-    StandardDiscoverSchemaInput discoveryInput = new StandardDiscoverSchemaInput()
+  private AirbyteCatalog runDiscovery(StandardTapConfig input, Path jobRoot) throws IOException, WorkerException {
+    StandardDiscoverCatalogInput discoveryInput = new StandardDiscoverCatalogInput()
         .withConnectionConfiguration(input.getSourceConnectionImplementation().getConfiguration());
 
     Path discoverJobRoot = jobRoot.resolve(DISCOVERY_DIR);
     Files.createDirectory(discoverJobRoot);
 
-    final OutputAndStatus<StandardDiscoverSchemaOutput> output = discoverSchemaWorker.run(discoveryInput, discoverJobRoot);
-    if (output.getStatus() == JobStatus.FAILED) {
+    final OutputAndStatus<StandardDiscoverCatalogOutput> output = discoverSchemaWorker.run(discoveryInput, discoverJobRoot);
+    if (output.getStatus() == JobStatus.FAILED || output.getOutput().isEmpty()) {
       throw new WorkerException("Cannot discover schema");
     }
 
-    // This is a hack because we need to have access to the original singer catalog
-    return SingerDiscoverSchemaWorker.readCatalog(discoverJobRoot);
+    return output.getOutput().get().getCatalog();
   }
 
 }

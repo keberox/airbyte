@@ -22,23 +22,26 @@
  * SOFTWARE.
  */
 
-package io.airbyte.workers.protocols.singer;
+package io.airbyte.workers.protocols.airbyte;
 
-import io.airbyte.commons.functional.CheckedConsumer;
-import io.airbyte.config.StandardTargetConfig;
-import io.airbyte.singer.SingerMessage;
-import java.nio.file.Path;
+import com.fasterxml.jackson.databind.JsonNode;
+import io.airbyte.commons.json.JsonSchemaValidator;
+import io.airbyte.singer.SingerConfigSchema;
+import java.util.function.Predicate;
 
-public interface SingerTarget extends CheckedConsumer<SingerMessage, Exception>, AutoCloseable {
+public class AirbyteProtocolPredicate implements Predicate<JsonNode> {
 
-  void start(StandardTargetConfig targetConfig, Path jobRoot) throws Exception;
+  private final JsonSchemaValidator jsonSchemaValidator;
+  private final JsonNode schema;
+
+  public AirbyteProtocolPredicate() {
+    jsonSchemaValidator = new JsonSchemaValidator();
+    schema = JsonSchemaValidator.getSchema(SingerConfigSchema.SINGER_MESSAGE.getFile());
+  }
 
   @Override
-  void accept(SingerMessage message) throws Exception;
-
-  void notifyEndOfStream() throws Exception;
-
-  @Override
-  void close() throws Exception;
+  public boolean test(JsonNode s) {
+    return jsonSchemaValidator.test(schema, s);
+  }
 
 }
