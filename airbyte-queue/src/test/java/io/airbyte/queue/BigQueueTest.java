@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package io.airbyte.persistentqueue;
+package io.airbyte.queue;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
