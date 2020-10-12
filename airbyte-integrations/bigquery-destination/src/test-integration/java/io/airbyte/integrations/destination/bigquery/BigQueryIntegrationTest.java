@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-package io.airbyte.integrations.destination.postgres;
+package io.airbyte.integrations.destination.bigquery;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import org.jooq.Record;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-public class PostgresIntegrationTest extends TestDestination {
+public class BigQueryIntegrationTest extends TestDestination {
 
   private PostgreSQLContainer<?> db;
 
