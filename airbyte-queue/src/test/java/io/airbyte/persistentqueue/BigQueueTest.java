@@ -24,9 +24,12 @@
 
 package io.airbyte.persistentqueue;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.google.common.base.Charsets;
+import io.airbyte.commons.lang.CloseableQueue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Objects;
@@ -36,7 +39,7 @@ import org.junit.jupiter.api.Test;
 
 class BigQueueTest {
 
-  private CloseableInputQueue<byte[]> queue;
+  private CloseableQueue<byte[]> queue;
 
   @BeforeEach
   void setup() throws IOException {
@@ -58,6 +61,8 @@ class BigQueueTest {
   void testPeek() {
     queue.offer(toBytes("hello"));
     assertEquals("hello", new String(Objects.requireNonNull(queue.peek()), Charsets.UTF_8));
+    assertEquals("hello", new String(Objects.requireNonNull(queue.peek()), Charsets.UTF_8));
+    assertEquals("hello", new String(Objects.requireNonNull(queue.poll()), Charsets.UTF_8));
   }
 
   @Test
@@ -67,6 +72,15 @@ class BigQueueTest {
     assertEquals(1, queue.size());
     queue.offer(toBytes("hello"));
     assertEquals(2, queue.size());
+  }
+
+  @Test
+  void testClosed() throws Exception {
+    queue.close();
+    assertDoesNotThrow(() -> queue.close());
+    assertThrows(IllegalStateException.class, () -> queue.offer(toBytes("hello")));
+    assertThrows(IllegalStateException.class, () -> queue.poll());
+    assertThrows(IllegalStateException.class, () -> queue.iterator());
   }
 
   @SuppressWarnings("SameParameterValue")

@@ -25,24 +25,31 @@
 package io.airbyte.persistentqueue;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.AbstractIterator;
 import com.leansoft.bigqueue.BigQueueImpl;
 import com.leansoft.bigqueue.IBigQueue;
+import io.airbyte.commons.lang.CloseableQueue;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.AbstractQueue;
+import java.util.Iterator;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Wraps BigQueueImpl behind Airbyte persistent queue interface. BigQueueImpl is threadsafe.
  */
-public class BigQueue extends AbstractCloseableInputQueue<byte[]> implements CloseableInputQueue<byte[]> {
+public class BigQueue extends AbstractQueue<byte[]> implements CloseableQueue<byte[]> {
 
   private final IBigQueue queue;
+  private final AtomicBoolean closed = new AtomicBoolean(false);
 
   public BigQueue(Path persistencePath, String queueName) throws IOException {
     queue = new BigQueueImpl(persistencePath.toString(), queueName);
   }
 
   @Override
-  protected boolean enqueueInternal(byte[] bytes) {
+  public boolean offer(byte[] bytes) {
+    Preconditions.checkState(!closed.get());
     try {
       queue.enqueue(bytes);
     } catch (IOException e) {
@@ -52,7 +59,8 @@ public class BigQueue extends AbstractCloseableInputQueue<byte[]> implements Clo
   }
 
   @Override
-  protected byte[] pollInternal() {
+  public byte[] poll() {
+    Preconditions.checkState(!closed.get());
     try {
       return queue.dequeue();
     } catch (IOException e) {
@@ -77,7 +85,26 @@ public class BigQueue extends AbstractCloseableInputQueue<byte[]> implements Clo
   }
 
   @Override
-  protected void closeInternal() throws Exception {
+  public Iterator<byte[]> iterator() {
+    Preconditions.checkState(!closed.get());
+
+    return new AbstractIterator<>() {
+
+      @Override
+      protected byte[] computeNext() {
+        final byte[] poll = poll();
+        if (poll == null) {
+          return endOfData();
+        }
+        return poll;
+      }
+
+    };
+  }
+
+  @Override
+  public void close() throws Exception {
+    closed.set(true);
     // todo (cgardens) - this barfs out a huge warning. known issue with the lib:
     // https://github.com/bulldog2011/bigqueue/issues/35.
     queue.close();

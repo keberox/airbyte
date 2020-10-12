@@ -22,24 +22,10 @@
  * SOFTWARE.
  */
 
-package io.airbyte.persistentqueue;
+package io.airbyte.commons.lang;
 
 import java.util.Queue;
 
-/**
- * An autocloseable queue with a hook for signal when no more records will written to the queue.
- * Intended for use with queues that are accessed across multiple threads and that contain
- * connections or resources that should be cleaned up after use. See
- * {@link AbstractCloseableInputQueue} for an example of the state machine that this interface
- * provides.
- *
- * @param <E>
- */
-public interface CloseableInputQueue<E> extends Queue<E>, AutoCloseable {
-
-  /**
-   * Calling this signals that no more records will be written to the queue.
-   */
-  void closeInput();
+public interface CloseableQueue<E> extends Queue<E>, AutoCloseable {
 
 }
