@@ -1,4 +1,5 @@
 from typing import Generator
+import json
 import yaml
 import pkgutil
 import warnings
@@ -36,7 +37,7 @@ class AirbyteCheckResponse(object):
         self.field_to_error = field_to_error
 
 
-class AirbyteSchema(object):
+class AirbyteCatalog(object):
     def __init__(self, schema):
         self.schema = schema
 
@@ -44,6 +45,10 @@ class AirbyteSchema(object):
 class AirbyteConfig(object):
     def __init__(self, config_string):
         self.config_string = config_string
+
+    def json(self):
+        return json.loads(self.config_string)
+
 
 
 class Integration(object):
@@ -67,7 +72,7 @@ class Integration(object):
     def check(self, config_object, rendered_config_path) -> AirbyteCheckResponse:
         raise Exception("Not Implemented")
 
-    def discover(self, config_object, rendered_config_path) -> AirbyteSchema:
+    def discover(self, config_object, rendered_config_path) -> AirbyteCatalog:
         raise Exception("Not Implemented")
 
 

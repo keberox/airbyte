@@ -71,7 +71,7 @@ class AirbyteEntrypoint(object):
 
             # todo: output message for check
             if cmd == "check":
-                check_result = source.check(logging, rendered_config_path)
+                check_result = source.check(config_object, rendered_config_path)
                 if check_result.successful:
                     print("Check succeeded")
                     sys.exit(0)
@@ -79,12 +79,12 @@ class AirbyteEntrypoint(object):
                     print("Check failed")
                     sys.exit(1)
             elif cmd == "discover":
-                schema = source.discover(logging, rendered_config_path)
+                schema = source.discover(config_object, rendered_config_path)
                 print(schema.schema)
                 sys.exit(0)
             elif cmd == "read":
                 # todo: pass in state
-                generator = source.read(logging, rendered_config_path)
+                generator = source.read(config_object, rendered_config_path)
                 for message in generator:
                     print(message.serialize())
                 sys.exit(0)
