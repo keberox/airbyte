@@ -30,8 +30,8 @@ import io.airbyte.commons.json.Jsons;
 import io.airbyte.db.DatabaseHelper;
 import io.airbyte.integrations.base.TestDestination;
 import java.util.AbstractMap;
+import java.util.List;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.jooq.Record;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -70,7 +70,7 @@ public class PostgresIntegrationTest extends TestDestination {
   }
 
   @Override
-  protected Set<JsonNode> recordRetriever(TestDestinationEnv env, String streamName) throws Exception {
+  protected List<JsonNode> recordRetriever(TestDestinationEnv env, String streamName) throws Exception {
 
     return DatabaseHelper.query(
         DatabaseHelper.getConnectionPool(db.getUsername(), db.getPassword(), db.getJdbcUrl()),
@@ -86,7 +86,7 @@ public class PostgresIntegrationTest extends TestDestination {
             }).collect(Collectors.toMap(Entry::getKey, Entry::getValue)))
             .map(r -> (String) r.get(PostgresDestination.COLUMN_NAME))
             .map(Jsons::deserialize)
-            .collect(Collectors.toSet()));
+            .collect(Collectors.toList()));
   }
 
   @Override

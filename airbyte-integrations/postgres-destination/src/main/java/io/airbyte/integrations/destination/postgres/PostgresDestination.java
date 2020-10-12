@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Charsets;
 import io.airbyte.commons.concurrency.GracefulShutdownHandler;
 import io.airbyte.commons.json.Jsons;
+import io.airbyte.commons.lang.CloseableQueue;
 import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.config.DestinationConnectionSpecification;
 import io.airbyte.config.Schema;
@@ -41,10 +42,10 @@ import io.airbyte.integrations.base.DestinationConsumer;
 import io.airbyte.integrations.base.FailureTrackingConsumer;
 import io.airbyte.integrations.base.IntegrationRunner;
 import io.airbyte.queue.BigQueue;
-import io.airbyte.commons.lang.CloseableQueue;
 import io.airbyte.singer.SingerMessage;
 import io.airbyte.singer.SingerMessage.Type;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -138,7 +139,8 @@ public class PostgresDestination implements Destination {
               + ");",
           tmpTableName, COLUMN_NAME)));
 
-      final BigQueue writeBuffer = new BigQueue(Path.of("/data/queues").resolve(stream.getName()), stream.getName());
+      final Path queueRoot = Files.createTempDirectory("queues");
+      final BigQueue writeBuffer = new BigQueue(queueRoot.resolve(stream.getName()), stream.getName());
       writeBuffers.put(stream.getName(), new WriteConfig(tableName, tmpTableName, writeBuffer));
     }
 
@@ -184,8 +186,7 @@ public class PostgresDestination implements Destination {
      * @param writeBuffers - map of stream name to its respective buffer.
      * @param connectionPool - connection to the db.
      */
-    private static void writeStreamsWithNRecords(
-                                                 int minRecords,
+    private static void writeStreamsWithNRecords(int minRecords,
                                                  int batchSize,
                                                  Map<String, WriteConfig> writeBuffers,
                                                  BasicDataSource connectionPool) {
@@ -211,7 +212,7 @@ public class PostgresDestination implements Destination {
       final StringBuilder query = new StringBuilder(String.format("INSERT INTO %s(%s)\n", tmpTableName, COLUMN_NAME))
           .append("VALUES \n");
       boolean firstRecordInQuery = true;
-      for (int i = 0; i <= batchSize; i++) {
+      for (int i = 0; i < batchSize; i++) {
         final byte[] record = writeBuffer.poll();
         if (record == null) {
           break;

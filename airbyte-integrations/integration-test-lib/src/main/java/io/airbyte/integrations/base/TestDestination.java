@@ -25,6 +25,7 @@
 package io.airbyte.integrations.base;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,9 +46,7 @@ import io.airbyte.workers.protocols.singer.DefaultSingerTarget;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
@@ -102,7 +101,7 @@ public abstract class TestDestination {
    * @return All of the records in the destination at the time this method is invoked.
    * @throws Exception - can throw any exception, test framework will handle.
    */
-  protected abstract Set<JsonNode> recordRetriever(TestDestinationEnv testEnv, String streamName) throws Exception;
+  protected abstract List<JsonNode> recordRetriever(TestDestinationEnv testEnv, String streamName) throws Exception;
 
   /**
    * Function that performs any setup of external resources required for the test. e.g. instantiate a
@@ -184,7 +183,7 @@ public abstract class TestDestination {
         .map(record -> Jsons.deserialize(record, SingerMessage.class)).collect(Collectors.toList());
     runSync(messages, catalog);
 
-    assertSameMessages(new HashSet<>(messages), recordRetriever(testEnv, catalog.getStreams().get(0).getName()));
+    assertSameMessages(messages, recordRetriever(testEnv, catalog.getStreams().get(0).getName()));
   }
 
   /**
@@ -204,7 +203,7 @@ public abstract class TestDestination {
             .put("HKD", 10)
             .put("NZD", 700)));
     runSync(secondSyncMessages, catalog);
-    assertSameMessages(new HashSet<>(secondSyncMessages), recordRetriever(testEnv, catalog.getStreams().get(0).getName()));
+    assertSameMessages(secondSyncMessages, recordRetriever(testEnv, catalog.getStreams().get(0).getName()));
   }
 
   private void runSync(List<SingerMessage> messages, Schema catalog) throws IOException, WorkerException {
@@ -220,12 +219,15 @@ public abstract class TestDestination {
     target.close();
   }
 
-  private void assertSameMessages(Set<SingerMessage> expected, Set<JsonNode> actual) {
-    final Set<JsonNode> expectedJson = expected.stream()
+  private void assertSameMessages(List<SingerMessage> expected, List<JsonNode> actual) {
+    final List<JsonNode> expectedJson = expected.stream()
         .filter(message -> message.getType() == Type.RECORD)
         .map(SingerMessage::getRecord)
-        .collect(Collectors.toSet());
-    assertEquals(expectedJson, actual);
+        .collect(Collectors.toList());
+    // we want to ignore order in this comparison.
+    assertEquals(expectedJson.size(), actual.size());
+    assertTrue(expectedJson.containsAll(actual));
+    assertTrue(actual.containsAll(expectedJson));
   }
 
   public static class TestDestinationEnv {
