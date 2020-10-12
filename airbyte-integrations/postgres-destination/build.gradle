@@ -25,7 +25,7 @@ dependencies {
     implementation project(':airbyte-config:models')
     implementation project(':airbyte-db')
     implementation project(':airbyte-integrations:base-java')
-    implementation project(':airbyte-persistent-queue')
+    implementation project(':airbyte-queue')
     implementation project(':airbyte-singer')
 
     integrationTestImplementation project(':airbyte-integrations:integration-test-lib')

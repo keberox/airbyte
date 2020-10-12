@@ -40,8 +40,8 @@ import io.airbyte.integrations.base.Destination;
 import io.airbyte.integrations.base.DestinationConsumer;
 import io.airbyte.integrations.base.FailureTrackingConsumer;
 import io.airbyte.integrations.base.IntegrationRunner;
-import io.airbyte.persistentqueue.BigQueue;
-import io.airbyte.persistentqueue.CloseableInputQueue;
+import io.airbyte.queue.BigQueue;
+import io.airbyte.commons.lang.CloseableQueue;
 import io.airbyte.singer.SingerMessage;
 import io.airbyte.singer.SingerMessage.Type;
 import java.io.IOException;
@@ -191,7 +191,7 @@ public class PostgresDestination implements Destination {
                                                  BasicDataSource connectionPool) {
       for (final Map.Entry<String, WriteConfig> entry : writeBuffers.entrySet()) {
         final String tmpTableName = entry.getValue().getTmpTableName();
-        final CloseableInputQueue<byte[]> writeBuffer = entry.getValue().getWriteBuffer();
+        final CloseableQueue<byte[]> writeBuffer = entry.getValue().getWriteBuffer();
         while (writeBuffer.size() > minRecords) {
           try {
             DatabaseHelper.query(connectionPool, ctx -> ctx.execute(buildWriteQuery(batchSize, writeBuffer, tmpTableName)));
@@ -207,7 +207,7 @@ public class PostgresDestination implements Destination {
     // VALUES
     // ({ "my": "data" }),
     // ({ "my": "data" });
-    private static String buildWriteQuery(int batchSize, CloseableInputQueue<byte[]> writeBuffer, String tmpTableName) {
+    private static String buildWriteQuery(int batchSize, CloseableQueue<byte[]> writeBuffer, String tmpTableName) {
       final StringBuilder query = new StringBuilder(String.format("INSERT INTO %s(%s)\n", tmpTableName, COLUMN_NAME))
           .append("VALUES \n");
       boolean firstRecordInQuery = true;
@@ -246,9 +246,6 @@ public class PostgresDestination implements Destination {
 
     @Override
     public void close(boolean hasFailed) throws Exception {
-      // signal no more writes to buffers.
-      writeConfigs.values().forEach(writeConfig -> writeConfig.getWriteBuffer().closeInput());
-
       if (hasFailed) {
         LOGGER.error("executing on failed close procedure.");
 
@@ -301,9 +298,9 @@ public class PostgresDestination implements Destination {
 
     private final String tableName;
     private final String tmpTableName;
-    private final CloseableInputQueue<byte[]> writeBuffer;
+    private final CloseableQueue<byte[]> writeBuffer;
 
-    private WriteConfig(String tableName, String tmpTableName, CloseableInputQueue<byte[]> writeBuffer) {
+    private WriteConfig(String tableName, String tmpTableName, CloseableQueue<byte[]> writeBuffer) {
       this.tableName = tableName;
       this.tmpTableName = tmpTableName;
       this.writeBuffer = writeBuffer;
@@ -317,7 +314,7 @@ public class PostgresDestination implements Destination {
       return tmpTableName;
     }
 
-    public CloseableInputQueue<byte[]> getWriteBuffer() {
+    public CloseableQueue<byte[]> getWriteBuffer() {
       return writeBuffer;
     }
 
