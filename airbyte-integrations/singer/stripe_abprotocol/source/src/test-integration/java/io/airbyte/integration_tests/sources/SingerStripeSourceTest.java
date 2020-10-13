@@ -35,8 +35,9 @@ import io.airbyte.commons.io.IOs;
 import io.airbyte.commons.json.Jsons;
 import io.airbyte.commons.resources.MoreResources;
 import io.airbyte.workers.WorkerException;
+import io.airbyte.workers.process.AirbyteIntegrationLauncher;
 import io.airbyte.workers.process.DockerProcessBuilderFactory;
-import io.airbyte.workers.process.ProcessBuilderFactory;
+import io.airbyte.workers.process.IntegrationLauncher;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -67,7 +68,7 @@ public class SingerStripeSourceTest {
 
   protected Path jobRoot;
   protected Path workspaceRoot;
-  protected ProcessBuilderFactory pbf;
+  protected IntegrationLauncher launcher;
   protected Path catalogPath;
 
   @BeforeEach
@@ -83,7 +84,9 @@ public class SingerStripeSourceTest {
 
     writeConfigFilesToJobRoot();
 
-    pbf = new DockerProcessBuilderFactory(workspaceRoot, workspaceRoot.toString(), "", "host");
+    launcher = new AirbyteIntegrationLauncher(
+        IMAGE_NAME,
+        new DockerProcessBuilderFactory(workspaceRoot, workspaceRoot.toString(), "", "host"));
   }
 
   private static String getEmail(int number) {
@@ -120,12 +123,14 @@ public class SingerStripeSourceTest {
 
   @Test
   public void testGetSpec() throws WorkerException, IOException, InterruptedException {
-    Process process = pbf.create(jobRoot, IMAGE_NAME, "--spec").start();
+    Process process = launcher.spec(jobRoot).start();
     process.waitFor();
+
     InputStream expectedSpecInputStream = Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("spec.json"));
-    JsonNode expectedSpec = Jsons.deserialize(new String(expectedSpecInputStream.readAllBytes()));
-    JsonNode actualSpec = Jsons.deserialize(new String(process.getInputStream().readAllBytes()));
-    assertEquals(expectedSpec, actualSpec);
+
+    assertEquals(
+        Jsons.deserialize(new String(expectedSpecInputStream.readAllBytes())),
+        Jsons.deserialize(new String(process.getInputStream().readAllBytes())));
   }
 
   @Test
@@ -215,30 +220,18 @@ public class SingerStripeSourceTest {
     fullConfig.put("account_id", "acct_" + RandomStringUtils.randomAlphanumeric(20));
     fullConfig.put("start_date", "2017-01-01T00:00:00Z");
 
-    Files.writeString(
-        Path.of(jobRoot.toString(), INVALID_CONFIG), Jsons.serialize(fullConfig));
+    Files.writeString(Path.of(jobRoot.toString(), INVALID_CONFIG), Jsons.serialize(fullConfig));
   }
 
   private Process createDiscoveryProcess(String configFileName) throws IOException, WorkerException {
-    return pbf.create(
-        jobRoot,
-        IMAGE_NAME,
-        "--config",
-        configFileName,
-        "--discover")
+    return launcher.discover(jobRoot, configFileName)
         .redirectOutput(catalogPath.toFile())
         .redirectError(ProcessBuilder.Redirect.INHERIT)
         .start();
   }
 
   private Process createSyncProcess(Path syncOutputPath) throws IOException, WorkerException {
-    return pbf.create(
-        jobRoot,
-        IMAGE_NAME,
-        "--config",
-        CONFIG,
-        "--properties",
-        CATALOG)
+    return launcher.read(jobRoot, CONFIG, CATALOG)
         .redirectOutput(syncOutputPath.toFile())
         .redirectError(ProcessBuilder.Redirect.INHERIT)
         .start();
